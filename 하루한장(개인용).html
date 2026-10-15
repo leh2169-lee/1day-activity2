@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>10월 하루 한장 (개인 태블릿 - 자동저장 완성본)</title>
+    <style>
+        :root {
+            --main-bg: #fdfcf0;
+            --accent-color: #a8e6cf; 
+            --next-btn: #4caf50;
+            --prev-btn: #9e9e9e;
+            --subject-color: #fbc02d;
+            --puzzle-border: #7986cb;
+        }
+        
+        html, body {
+            overscroll-behavior: none; /* 태블릿 당겨서 새로고침 방지 */
+        }
+
+        body { 
+            font-family: 'Nanum Gothic', 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; display: flex; flex-direction: column; 
+            height: 100dvh; overflow: hidden; 
+            user-select: none; -webkit-user-select: none; touch-action: manipulation;
+        }
+        
+        .progress-container { width: 100%; background: #e0e0e0; height: 12px; position: fixed; top: 0; z-index: 1000; }
+        .progress-bar { height: 100%; background: #4a90e2; width: 10%; transition: width 0.4s ease; }
+
+        .container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; margin-top: 20px; }
+        
+        .step-section { 
+            display: none; width: 95%; max-width: 1200px; height: 92dvh; 
+            background: white; padding: 25px; padding-bottom: 60px; border-radius: 25px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1); border: 2px solid #e0e0e0;
+            flex-direction: column; align-items: center; justify-content: space-between; overflow-y: auto;
+            overscroll-behavior-y: contain;
+        }
+        .step-section.active { display: flex; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        h2 { font-size: 2.5rem; color: #333; margin: 0 0 10px 0; border-bottom: 5px solid var(--accent-color); padding-bottom: 5px; text-align: center; width: 100%; }
+
+        .nav-footer { width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 15px 0; margin-top: auto; margin-bottom: 50px; }
+        .btn { padding: 12px 25px; font-size: 1.4rem; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; color: white; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn:active { transform: scale(0.95); }
+        .btn-next { background: var(--next-btn); padding: 12px 40px; font-size: 1.6rem; }
+        .btn-prev { background: var(--prev-btn); padding: 12px 40px; font-size: 1.6rem; }
+
+        /* Step 0: 개인 이름 & 실제 사진 선택 카드 */
+        .name-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; width: 88%; max-width: 820px; margin-top: 10px; }
+        .name-card { 
+            background: white; border: 4px solid #4fc3f7; border-radius: 20px; padding: 18px 12px; 
+            font-size: 1.8rem; font-weight: bold; color: #0277bd; text-align: center; cursor: pointer; 
+            transition: 0.2s; box-shadow: 0 6px 12px rgba(0,0,0,0.06);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+        }
+        .name-cardPhoto {
+            width: 115px; height: 115px; border-radius: 50%; object-fit: cover;
+            border: 4px solid #e1f5fe; box-shadow: 0 4px 8px rgba(0,0,0,0.12); background: #f5f5f5;
+            transition: 0.2s;
+        }
+        .name-card.selected { background: #0277bd; color: white; border-color: #01579b; transform: scale(1.04); box-shadow: 0 10px 20px rgba(2, 119, 189, 0.3); }
+        .name-card.selected .name-cardPhoto { border-color: #ffeb3b; transform: scale(1.05); }
+
+        /* 달력 및 날씨 */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; width: 100%; max-width: 800px; }
+        .day-header { background: #f5f5f5; padding: 8px; font-weight: bold; font-size: 1.2rem; border-radius: 8px; text-align: center; }
+        .day { padding: 10px 5px; border: 1px solid #ddd; border-radius: 10px; font-size: 1.5rem; cursor: pointer; background: white; text-align: center; height: 105px; box-sizing: border-box; overflow: hidden; }
+        .day.selected { background: var(--accent-color); font-weight: bold; border: 3px solid #4caf50; transform: scale(1.03); transition: 0.2s; }
+        .display-text { margin-top: 10px; font-size: 2rem; font-weight: bold; color: #00796b; background: #e0f2f1; padding: 12px 30px; border-radius: 50px; text-align: center; border: 3px dashed #4dd0e1; }
+        
+        .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 70%; max-width: 850px; }
+        .w-item { padding: 22px; border: 4px solid #eee; border-radius: 20px; font-size: 2.1rem; cursor: pointer; text-align: center; transition: 0.2s; }
+        .w-item.active { border-color: #ff8a65; background: #fff5f2; transform: scale(1.02); }
+
+        /* 시간표 및 과목 선택 */
+        .table-container { width: 100%; max-width: 800px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 2px solid #ccc; padding: 8px; text-align: center; font-size: 1.2rem; }
+        th { background: #f9f9f9; color: #555; font-size: 1.3rem; }
+        .drop-zone { min-height: 55px; border: 2px dashed #b0bec5; border-radius: 8px; background: #fafafa; font-weight: bold; font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+        .drop-zone.target-active { border: 3px solid #ff9800 !important; background: #fff8e1 !important; box-shadow: 0 0 10px rgba(255, 152, 0, 0.35); }
+        
+        .pool-container { display: flex; width: 100%; max-width: 800px; flex-direction: column; gap: 10px; background: #f1f8e9; padding: 15px; border-radius: 15px; border: 1px solid #dcedc8; margin-bottom: 10px; box-sizing: border-box; }
+        .pool-group { display: flex; flex-direction: column; gap: 8px; }
+        .pool-label { font-weight: bold; font-size: 1.15rem; color: #33691e; }
+        .item-list { display: flex; gap: 8px; flex-wrap: wrap; }
+        .drag-item { padding: 10px 16px; background: white; border: 3px solid var(--subject-color); border-radius: 12px; font-size: 1.15rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.08); transition: transform 0.1s; }
+        .drag-item:active { transform: scale(0.92); }
+        .drag-item.special { border-color: #f44336; color: #d32f2f; background-color: #fff3e0; }
+
+        /* 심화과제 및 무오류 단어 풀 */
+        .btn-think-more { background: #e8eaf6; color: #3f51b5; padding: 10px 25px; font-size: 1.4rem; border: 2px solid #c5cae9; border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 15px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .advanced-task { display: none; width: 95%; max-width: 900px; background: #f8f9fa; border: 2px dashed #7986cb; border-radius: 15px; padding: 15px 20px; margin-top: 15px; flex-direction: column; gap: 15px; box-sizing: border-box; }
+        .advanced-task.show { display: flex; animation: fadeInDown 0.4s ease; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .adv-header { display: flex; align-items: center; gap: 12px; width: 100%; flex-wrap: wrap; }
+        .adv-badge { background: #5c6bc0; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.2rem; }
+        .btn-hint {
+            background: #fff9c4; border: 2px solid #fbc02d; color: #f57f17;
+            padding: 6px 15px; border-radius: 15px; cursor: pointer; font-weight: bold;
+            font-size: 1.1rem; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-hint:active { transform: scale(0.95); }
+
+        .adv-text { font-size: 1.25rem; color: #3949ab; font-weight: bold; margin: 0; }
+        .adv-content { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        
+        .sentence-display { display: flex; flex-wrap: wrap; gap: 10px; background: white; padding: 15px; border-radius: 15px; border: 2px solid #e8eaf6; width: 100%; box-sizing: border-box; align-items: center; }
+        .word-slot { min-width: 90px; height: 54px; border: 3px dashed #c5cae9; border-radius: 10px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; padding: 0 6px; }
+        .word-slot.filled { border-style: solid; border-color: var(--puzzle-border); background: #e8eaf6; }
+        .word-slot.show-hint::before { content: attr(data-hint); color: #9e9e9e; font-size: 1.1rem; font-weight: bold; pointer-events: none; opacity: 0.75; }
+        .word-slot.filled.show-hint::before { display: none; }
+
+        .word-pool { display: flex; flex-wrap: wrap; gap: 10px; padding: 15px; background: #e1f5fe; border-radius: 15px; border: 2px solid #b3e5fc; min-height: 54px; width: 100%; box-sizing: border-box; }
+        .word-chip { padding: 10px 18px; background: white; border: 3px solid var(--puzzle-border); border-radius: 10px; font-size: 1.4rem; font-weight: bold; color: #3949ab; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); user-select: none; display: flex; align-items: center; justify-content: center; }
+        .word-chip:active { transform: scale(0.9); }
+        .dynamic-word { background-color: #fffde7; border-color: #ff9800; color: #e65100; box-shadow: 0 0 15px rgba(255, 152, 0, 0.4); }
+        .pop-animation { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+        /* 급식 모드 (그림 매칭 전용) */
+        .hidden { display: none !important; }
+        .btn-select-icon { font-size: 3rem; width: 85px; height: 85px; padding: 0; display: flex; justify-content: center; align-items: center; background: #fff9c4; border: 3px solid #fbc02d; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
+        .btn-select-icon:active { transform: scale(0.9); }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; }
+        .modal-content2 { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 550px; text-align: center; }
+        
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 15px; }
+        .cat-btn { font-size: 3rem; padding: 12px 8px; border: 3px solid #ddd; border-radius: 15px; cursor: pointer; background: #fafafa; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: 0.2s; }
+        .cat-btn span { font-size: 0.95rem; font-weight: bold; color: #555; margin-top: 5px; }
+        .cat-btn:active { background: #e3f2fd; border-color: #2196f3; transform: scale(0.95); }
+        
+        .menu-tab-btn { font-size: 2.3rem; min-width: 65px; height: 65px; display:flex; justify-content:center; align-items:center; border-radius: 15px; border: 3px solid #ccc; background-color: white; cursor: pointer; margin: 4px; padding: 0 10px; }
+        .menu-tab-btn.active { border-color: #ff9800; background-color: #fff3e0; transform: scale(1.08); box-shadow: 0 5px 15px rgba(255,152,0,0.3); }
+        .menu-tab-btn.done { background-color: #c8e6c9; border-color: #4caf50; opacity: 0.85; }
+        
+        .toolbar { background: #e3f2fd; padding: 10px; border-radius: 12px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; width: 100%; box-sizing: border-box; }
+        .mode-btn { font-size: 18px; padding: 10px 15px; border: 2px solid #90caf9; background: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .mode-btn.active { background: #2196f3; color: white; border-color: #1565c0; }
+        .brush-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ccc; background: white; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .brush-btn.active { border: 4px solid #3f51b5; background: #e8eaf6; }
+        
+        #canvasContainer { position: relative; width: 100%; max-width: 600px; height: 320px; margin: 0 auto; background-color: #fffde7; border: 4px dashed #9e9e9e; border-radius: 20px; overflow: hidden; touch-action: none; }
+        #scratchContent { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 1; pointer-events: none; }
+        #scratchContent .bg-emoji { font-size: 140px; }
+        #drawingCanvas { position: absolute; top: 0; left: 0; z-index: 2; width: 100%; height: 100%; touch-action: none; }
+        
+        #trayContainer { position: relative; display: inline-block; max-width: 750px; width: 100%; border-radius: 20px; box-shadow: 0 15px 30px rgba(0,0,0,0.25); }
+        #trayImage { width: 100%; display: block; border-radius: 20px; }
+        
+        .tray-text { 
+            position: absolute; transform: translate(-50%, -50%); 
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%; pointer-events: none;
+        }
+        #pos0 { left: 26%; top: 68%; font-size: clamp(2.5rem, 8vw, 5.5rem); width: 35%; height: 30%; } 
+        #pos1 { left: 74%; top: 68%; font-size: clamp(2.5rem, 8vw, 5.5rem); width: 35%; height: 30%; } 
+        #pos2 { left: 19%; top: 25%; font-size: clamp(1.5rem, 5vw, 3.8rem); width: 22%; height: 25%; } 
+        #pos3 { left: 41%; top: 25%; font-size: clamp(1.2rem, 4vw, 3.3rem); width: 18%; height: 20%; } 
+        #pos4 { left: 59%; top: 25%; font-size: clamp(1.2rem, 4vw, 3.3rem); width: 18%; height: 20%; } 
+        #pos5 { left: 81%; top: 25%; font-size: clamp(1.5rem, 5vw, 3.8rem); width: 22%; height: 25%; } 
+
+        /* 감정 그리드 (개인 모드 1인 집중형 + 실제 사진) */
+        .emotion-6grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+        .emotion-6grid.single-mode { display: flex; justify-content: center; align-items: center; width: 100%; min-height: 240px; }
+        .emotion-6grid.single-mode .student-thermometer { width: 90%; max-width: 450px; padding: 25px; margin: 10px 0; }
+        .student-thermometer { background: #fafafa; border: 2px solid #eee; border-radius: 20px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; }
+        .student-thermometer.highlight { border: 4px solid #ff9800; background: #fff8e1; box-shadow: 0 10px 20px rgba(255,152,0,0.18); }
+        .student-header { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
+        .student-mini-photo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #ff9800; background: #fff; }
+        .student-name { font-weight: bold; font-size: 1.6rem; color: #222; }
+        .emotion-face-container { width: 100%; height: 115px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 15px; border: 2px dashed #ffb74d; background: white; margin-bottom: 8px; transition: 0.2s; } 
+        .emotion-face-container:active { transform: scale(0.95); background: #fff3e0; }
+        .emotion-face { font-size: 4rem; transition: font-size 0.2s ease; }
+
+        /* 대시보드형 요약판 (Step 7) */
+        .summary-grid { 
+            display: grid; 
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 15px; 
+            width: 100%; 
+            flex: 1; 
+            padding-bottom: 10px; 
+            box-sizing: border-box;
+        }
+        .summary-card { 
+            background: white; 
+            border: 3px dashed #7986cb; 
+            border-radius: 15px; 
+            padding: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
+            overflow-y: auto; 
+        }
+        .summary-card h3 { 
+            margin: 0 0 8px 0; 
+            color: #3949ab; 
+            font-size: 1.3rem; 
+            border-bottom: 2px solid #e8eaf6; 
+            padding-bottom: 5px; 
+            width: 100%; 
+            text-align: center; 
+        }
+        
+        #card-emotion { grid-column: span 2; }
+        #card-date { grid-column: span 2; justify-content: center; }
+        #card-weather { grid-column: span 2; justify-content: center; }
+        #card-timetable { grid-column: span 3; }
+        #card-meal { grid-column: span 3; overflow: hidden; justify-content: center; }
+
+        .student-photo {
+            width: 85px; 
+            height: 85px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            border: 4px solid #ff9800;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            background: #fff;
+        }
+
+        /* 자동 복구 안내 토스트 배너 */
+        #restoreToast {
+            display: none; position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            background: rgba(33, 33, 33, 0.9); color: white; padding: 12px 28px; border-radius: 30px;
+            font-size: 1.2rem; font-weight: bold; z-index: 5000; box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+        }
+
+        .confetti { position: fixed; width: 15px; height: 15px; background-color: #f2d74e; z-index: 9999; pointer-events: none; animation: fall 3s linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+<div id="restoreToast">💾 방금 하던 활동을 안전하게 불러왔어요!</div>
+
+<!-- 12가지 기본 식자재 그림 모달 -->
+<div class="modal-overlay" id="categoryModal">
+    <div class="modal-content2">
+        <h3 style="font-size: 1.8rem; color: #333; margin-top:0; margin-bottom: 8px;">🍽️ 똑같은 그림을 찾아요!</h3>
+        <p style="color:#666; font-size:1.15rem; margin-bottom: 15px;">전자칠판의 반찬과 똑같은 그림을 눌러주세요.</p>
+        
+        <div class="category-grid">
+            <div class="cat-btn" onclick="selectMealCategory('🍚', '밥')">🍚<span>밥류</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🍲', '국')">🍲<span>국/탕류</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🍖', '고기반찬')">🍖<span>고기류</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🐟', '생선반찬')">🐟<span>생선/해물</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🥬', '나물반찬')">🥬<span>나물/채소</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🌶️', '김치')">🌶️<span>김치류</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🍤', '튀김반찬')">🍤<span>튀김/전</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🥚', '계란반찬')">🥚<span>계란/두부</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🍜', '면요리')">🍜<span>면류</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🍎', '과일')">🍎<span>과일류</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🥛', '우유')">🥛<span>우유/음료</span></div>
+            <div class="cat-btn" onclick="selectMealCategory('🍰', '간식')">🍰<span>빵/간식</span></div>
+        </div>
+        <button class="btn" style="background:#d32f2f; margin-top:20px; padding:10px 30px;" onclick="closeCategoryModal()">닫기 ✖️</button>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Step 0: 개인 선택 (실제 사진 적용) -->
+    <section class="step-section active" id="step0">
+        <h2>👋 나는 누구인가요?</h2>
+        <p style="font-size: 1.4rem; color: #555; font-weight: bold; margin: 0 0 10px 0;">내 사진과 이름을 찾아 터치해주세요.</p>
+        
+        <div class="name-grid">
+            <div class="name-card" data-name="김민주" onclick="selectStudent(this, '김민주')">
+                <img src="김민주.jpg" class="name-cardPhoto" alt="김민주" onerror="handleImgError(this, '👧🏻')">
+                <div>김민주</div>
+            </div>
+            <div class="name-card" data-name="김현우" onclick="selectStudent(this, '김현우')">
+                <img src="김현우.jpg" class="name-cardPhoto" alt="김현우" onerror="handleImgError(this, '👦🏻')">
+                <div>김현우</div>
+            </div>
+            <div class="name-card" data-name="송민서" onclick="selectStudent(this, '송민서')">
+                <img src="송민서.jpg" class="name-cardPhoto" alt="송민서" onerror="handleImgError(this, '👧🏼')">
+                <div>송민서</div>
+            </div>
+            <div class="name-card" data-name="엽건영" onclick="selectStudent(this, '엽건영')">
+                <img src="엽건영.jpg" class="name-cardPhoto" alt="엽건영" onerror="handleImgError(this, '👦🏽')">
+                <div>엽건영</div>
+            </div>
+            <div class="name-card" data-name="이 환" onclick="selectStudent(this, '이 환')">
+                <img src="이 환.jpg" class="name-cardPhoto" alt="이 환" onerror="handleImgError(this, '👦🏼')">
+                <div>이 환</div>
+            </div>
+            <div class="name-card" data-name="임시은" onclick="selectStudent(this, '임시은')">
+                <img src="임시은.jpg" class="name-cardPhoto" alt="임시은" onerror="handleImgError(this, '👧🏽')">
+                <div>임시은</div>
+            </div>
+        </div>
+        <div class="nav-footer">
+            <button class="btn btn-next" onclick="move(1)" id="btnStart" style="display:none; background:#ff9800; font-size: 1.8rem; padding: 15px 50px;">수업 시작하기 🚀</button>
+        </div>
+    </section>
+
+    <!-- Step 1: 달력 읽기 -->
+    <section class="step-section" id="step1">
+        <h2>📅 10월 달력 읽기</h2>
+        <div class="calendar-grid">
+            <div class="day-header" style="color:red">일</div>
+            <div class="day-header">월</div>
+            <div class="day-header">화</div>
+            <div class="day-header">수</div>
+            <div class="day-header">목</div>
+            <div class="day-header">금</div>
+            <div class="day-header" style="color:blue">토</div>
+            
+            <div></div><div></div><div></div><div></div>
+            <div class="day" data-day="1" onclick="selectDay(this, 1)">1</div>
+            <div class="day" data-day="2" onclick="selectDay(this, 2)">2<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">⛰️10월 산행 시작</span></div>
+            <div class="day" data-day="3" style="color:red; font-weight:bold;" onclick="selectDay(this, 3)">3<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">🇰🇷개천절</span></div>
+            <div class="day" data-day="4" style="color:red; font-weight:bold;" onclick="selectDay(this, 4)">4</div>
+            <div class="day" data-day="5" style="color:red; font-weight:bold;" onclick="selectDay(this, 5)">5<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">🔴대체공휴일</span></div>           
+            <div class="day" data-day="6" onclick="selectDay(this, 6)">6</div>
+            <div class="day" data-day="7" onclick="selectDay(this, 7)">7<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">🥋10월 태권도 시작</span></div>
+            <div class="day" data-day="8" onclick="selectDay(this, 8)">8</div>
+            <div class="day" data-day="9" style="color:red; font-weight:bold;" onclick="selectDay(this, 9)">9<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">🇰🇷한글날</span></div>
+            <div class="day" data-day="10" style="color:blue; font-weight:bold;" onclick="selectDay(this, 10)">10</div>
+            <div class="day" data-day="11" style="color:red; font-weight:bold;" onclick="selectDay(this, 11)">11</div>
+            <div class="day" data-day="12" onclick="selectDay(this, 12)">12</div>
+            <div class="day" data-day="13" onclick="selectDay(this, 13)">13<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">🩺건강검진</span></div>
+            <div class="day" data-day="14" onclick="selectDay(this, 14)">14</div>
+            <div class="day" data-day="15" onclick="selectDay(this, 15)">15<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">🛍️비즈쿨 플리마켓</span></div>
+            <div class="day" data-day="16" onclick="selectDay(this, 16)">16</div>
+            <div class="day" data-day="17" style="color:blue; font-weight:bold;" onclick="selectDay(this, 17)">17</div>
+            <div class="day" data-day="18" style="color:red; font-weight:bold;" onclick="selectDay(this, 18)">18</div>
+            <div class="day" data-day="19" onclick="selectDay(this, 19)">19</div>
+            <div class="day" data-day="20" onclick="selectDay(this, 20)">20</div>
+            <div class="day" data-day="21" onclick="selectDay(this, 21)">21</div>
+            <div class="day" data-day="22" onclick="selectDay(this, 22)">22</div>
+            <div class="day" data-day="23" onclick="selectDay(this, 23)">23</div>
+            <div class="day" data-day="24" style="color:blue; font-weight:bold;" onclick="selectDay(this, 24)">24</div>
+            <div class="day" data-day="25" style="color:red; font-weight:bold;" onclick="selectDay(this, 25)">25</div>            
+            <div class="day" data-day="26" onclick="selectDay(this, 26)">26</div>
+            <div class="day" data-day="27" onclick="selectDay(this, 27)">27</div>
+            <div class="day" data-day="28" onclick="selectDay(this, 28)">28</div>
+            <div class="day" data-day="29" onclick="selectDay(this, 29)">29</div>
+            <div class="day" data-day="30" onclick="selectDay(this, 30)">30<br><span style="display:block; font-size:0.85rem; color:#d32f2f; margin-top:3px;">🏛️찾아오는 박물관</span></div>
+            <div class="day" data-day="31" style="color:blue; font-weight:bold;" onclick="selectDay(this, 31)">31</div>
+        </div>
+        <div id="dateText" class="display-text">날짜를 눌러주세요 👆</div>
+        
+        <button class="btn-think-more" onclick="toggleAdvanced(this)">🤔 더 생각하기</button>
+        <div class="advanced-task">
+            <div class="adv-header">
+                <div class="adv-badge">⭐ 심화 과제</div>
+                <button class="btn-hint" onclick="showHint(1)">💡 힌트 보기</button>
+                <button class="btn-hint" style="background:#e8f5e9; border-color:#4caf50; color:#2e7d32;" onclick="speakSentence(1)">🔊 문장 읽기</button>
+            </div>
+            <div class="adv-content">
+                <p class="adv-text">달력을 터치한 뒤 단어 카드를 누르면 알맞은 칸에 쏙 들어가요!</p>
+                <div class="sentence-display" id="sentence1">
+                    <div class="word-slot" data-hint="오늘은" data-expect="오늘은"></div>
+                    <div class="word-slot" data-hint="10월" data-expect="10월"></div>
+                    <div class="word-slot" data-hint="O일" data-role="day"></div>
+                    <div class="word-slot" data-hint="O요일" data-role="weekday"></div>
+                    <div class="word-slot" data-hint="입니다." data-expect="입니다."></div>
+                    <div class="word-slot" data-hint="O일정" data-role="event"></div>
+                    <div class="word-slot" data-hint="하는 날" data-expect="하는 날"></div>
+                    <div class="word-slot" data-hint="입니다." data-expect="입니다."></div>
+                </div>
+                <div class="word-pool" id="pool1">
+                    <div class="word-chip" onclick="tapWord(this, 1)">오늘은</div>
+                    <div class="word-chip" onclick="tapWord(this, 1)">10월</div>
+                    <div class="word-chip" onclick="tapWord(this, 1)">입니다.</div>
+                    <div class="word-chip" onclick="tapWord(this, 1)">하는 날</div>
+                    <div class="word-chip" onclick="tapWord(this, 1)">입니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-footer">
+            <button class="btn btn-prev" onclick="move(0)">⬅️ 내 사진 다시 선택</button>
+            <button class="btn btn-next" onclick="move(2)">다음 활동으로 ➡️</button>
+        </div>
+    </section>
+
+    <!-- Step 2: 날씨 -->
+    <section class="step-section" id="step2">
+        <h2>☀️ 오늘 날씨는 어떤가요?</h2>
+        <div class="weather-grid">
+            <div class="w-item" data-weather="맑음" onclick="selectWeather(this, '맑음', '☀️')">☀️ 맑음</div>
+            <div class="w-item" data-weather="흐림" onclick="selectWeather(this, '흐림', '☁️')">☁️ 흐림</div>
+            <div class="w-item" data-weather="비" onclick="selectWeather(this, '비', '🌧️')">🌧️ 비</div>
+            <div class="w-item" data-weather="눈" onclick="selectWeather(this, '눈', '❄️')">❄️ 눈</div>
+            <div class="w-item" data-weather="바람" onclick="selectWeather(this, '바람', '🌬️')">🌬️ 바람</div>
+            <div class="w-item" data-weather="공기나쁨" onclick="selectWeather(this, '공기나쁨', '😷')">😷 공기 나쁨</div>
+        </div>
+        <div id="weatherText" class="display-text">오늘의 날씨는? 👆</div>
+        
+        <button class="btn-think-more" onclick="toggleAdvanced(this)">🤔 더 생각하기</button>
+        <div class="advanced-task">
+            <div class="adv-header">
+                <div class="adv-badge">⭐ 심화 과제</div>
+                <button class="btn-hint" onclick="showHint(2)">💡 힌트 보기</button>
+                <button class="btn-hint" style="background:#e8f5e9; border-color:#4caf50; color:#2e7d32;" onclick="speakSentence(2)">🔊 문장 읽기</button>
+            </div>
+            <div class="adv-content">
+                <p class="adv-text">날씨 그림을 누르면 내 퍼즐 조각이 나타나요!</p>
+                <div class="sentence-display" id="sentence2">
+                    <div class="word-slot" data-hint="오늘" data-expect="오늘"></div>
+                    <div class="word-slot" data-hint="날씨는" data-expect="날씨는"></div>
+                    <div class="word-slot" data-hint="O날씨" data-role="weather"></div>
+                    <div class="word-slot" data-hint="입니다." data-expect="입니다."></div>
+                </div>
+                <div class="word-pool" id="pool2">
+                    <div class="word-chip" onclick="tapWord(this, 2)">오늘</div>
+                    <div class="word-chip" onclick="tapWord(this, 2)">날씨는</div>
+                    <div class="word-chip" onclick="tapWord(this, 2)">입니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-footer">
+            <button class="btn btn-prev" onclick="move(1)">⬅️ 이전</button>
+            <button class="btn btn-next" onclick="move(3)">다음 활동으로 ➡️</button>
+        </div>
+    </section>
+
+    <!-- Step 3: 시간표 -->
+    <section class="step-section" id="step3">
+        <h2>📊 오늘의 수업</h2>
+        <p style="font-size:1.1rem; color:#e65100; font-weight:bold; margin:0 0 8px 0;">
+            💡 넣을 칸을 먼저 터치해 선택(주황색 테두리)하거나, 아래 과목 카드를 눌러 순서대로 채워보세요!
+        </p>
+        
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th width="22%">교시</th>
+                    <th width="78%">과목 (터치하여 선택 / 지우기)</th>
+                </tr>
+                <script>
+                    for(let i=1; i<=6; i++) {
+                        document.write(`
+                        <tr>
+                            <td style="font-size:1.3rem; font-weight:bold;">${i}교시</td>
+                            <td class="drop-zone" data-type="sub" data-period="${i}" onclick="handleZoneClick(this)"></td>
+                        </tr>`);
+                        
+                        if (i === 3) {
+                            document.write(`
+                            <tr style="background-color: #fff9c4;">
+                                <td style="font-weight:bold; color:#f57f17; font-size:1.3rem;">점심</td>
+                                <td style="font-weight:bold; color:#e65100; font-size:1.4rem;">😋 맛있는 급식</td>
+                            </tr>`);
+                        }
+                    }
+                </script>
+            </table>
+        </div>
+
+        <button class="btn" style="background:#8bc34a; padding: 10px; font-size: 1.2rem; width: 100%; max-width:800px; margin-bottom: 10px;" onclick="togglePool()">➕ 과목 목록 열기 / 닫기</button>
+
+        <div class="pool-container" id="itemPool">
+            <div class="pool-group">
+                <div class="pool-label">📚 수업 선택:</div>
+                <div class="item-list">
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🎨미술</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🎤🪩여가활동</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🧹🚮자립생활</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🎶👯동아리</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🏃‍♂️🚴‍♂️체육</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🎹음악</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">📖국어</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🔢수학</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🌍사회</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🔬과학</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🥋자치</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">✂️공예</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">💡진로이론</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🔧조립</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">💊보건</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🏃‍♂️스포츠</div>
+                    <div class="drag-item" onclick="autoFill(this, 'sub')">🥾산행</div>
+                </div>
+            </div>
+            <div class="pool-group">
+                <div class="pool-label" style="color: #d32f2f;">✨ 특별 수업:</div>
+                <div class="item-list">
+                    <div class="drag-item special" onclick="autoFill(this, 'sub')">🏛️ 찾아오는 박물관</div>
+                    <div class="drag-item special" onclick="autoFill(this, 'sub')">🩺 건강검진</div>
+                    <div class="drag-item special" onclick="autoFill(this, 'sub')">🛍️ 비즈쿨 플리마켓</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn-think-more" onclick="toggleAdvanced(this)">🤔 더 생각하기</button>
+        <div class="advanced-task">
+            <div class="adv-header">
+                <div class="adv-badge">⭐ 심화 과제</div>
+                <button class="btn-hint" onclick="showHint(3)">💡 힌트 보기</button>
+                <button class="btn-hint" style="background:#e8f5e9; border-color:#4caf50; color:#2e7d32;" onclick="speakSentence(3)">🔊 문장 읽기</button>
+            </div>
+            <div class="adv-content">
+                <p class="adv-text">목록에서 좋아하는 과목을 누르면 퍼즐 조각이 나타나요!</p>
+                <div class="sentence-display" id="sentence3">
+                    <div class="word-slot" data-hint="내가" data-expect="내가"></div>
+                    <div class="word-slot" data-hint="가장" data-expect="가장"></div>
+                    <div class="word-slot" data-hint="기대하는" data-expect="기대하는"></div>
+                    <div class="word-slot" data-hint="수업은" data-expect="수업은"></div>
+                    <div class="word-slot" data-hint="O과목" data-role="subject"></div>
+                    <div class="word-slot" data-hint="입니다." data-expect="입니다."></div>
+                </div>
+                <div class="word-pool" id="pool3">
+                    <div class="word-chip" onclick="tapWord(this, 3)">내가</div>
+                    <div class="word-chip" onclick="tapWord(this, 3)">가장</div>
+                    <div class="word-chip" onclick="tapWord(this, 3)">기대하는</div>
+                    <div class="word-chip" onclick="tapWord(this, 3)">수업은</div>
+                    <div class="word-chip" onclick="tapWord(this, 3)">입니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-footer">
+            <button class="btn btn-prev" onclick="move(2)">⬅ 이전</button>
+            <button class="btn btn-next" onclick="move(4)">다음 활동으로 ➡️</button>
+        </div>
+    </section>
+
+    <!-- Step 4: 급식 활동 -->
+    <section class="step-section" id="step4">
+        <h2>😋 우리가 만드는 오늘의 급식</h2>
+        
+        <div id="mealSetupView" style="background-color: #e0e0e0; padding: 20px; border-radius: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 15px;">
+            <p style="text-align:center; color:#e65100; margin-top:0; margin-bottom: 15px; font-size:1.3rem; font-weight:bold;">💡 전자칠판과 똑같은 반찬 그림을 찾아 눌러주세요.</p>
+            
+            <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center;">
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <span style="font-weight:bold; color:#555;">밥 칸</span> 
+                    <button class="btn-select-icon" id="btn_m0_icon" onclick="openCategoryModal(0)">❓</button>
+                    <input type="hidden" id="m0_emoji_val" value="❓">
+                    <input type="hidden" id="m0_label_val" value="밥">
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <span style="font-weight:bold; color:#555;">국 칸</span> 
+                    <button class="btn-select-icon" id="btn_m1_icon" onclick="openCategoryModal(1)">❓</button>
+                    <input type="hidden" id="m1_emoji_val" value="❓">
+                    <input type="hidden" id="m1_label_val" value="국">
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <span style="font-weight:bold; color:#555;">반찬 1</span> 
+                    <button class="btn-select-icon" id="btn_m2_icon" onclick="openCategoryModal(2)">❓</button>
+                    <input type="hidden" id="m2_emoji_val" value="❓">
+                    <input type="hidden" id="m2_label_val" value="반찬">
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <span style="font-weight:bold; color:#555;">반찬 2</span> 
+                    <button class="btn-select-icon" id="btn_m3_icon" onclick="openCategoryModal(3)">❓</button>
+                    <input type="hidden" id="m3_emoji_val" value="❓">
+                    <input type="hidden" id="m3_label_val" value="반찬">
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <span style="font-weight:bold; color:#555;">반찬 3</span> 
+                    <button class="btn-select-icon" id="btn_m4_icon" onclick="openCategoryModal(4)">❓</button>
+                    <input type="hidden" id="m4_emoji_val" value="❓">
+                    <input type="hidden" id="m4_label_val" value="반찬">
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <span style="font-weight:bold; color:#555;">메인 반찬</span> 
+                    <button class="btn-select-icon" id="btn_m5_icon" onclick="openCategoryModal(5)">❓</button>
+                    <input type="hidden" id="m5_emoji_val" value="❓">
+                    <input type="hidden" id="m5_label_val" value="메인반찬">
+                </div>
+            </div>
+            
+            <button class="btn" style="background-color: #3f51b5; font-size: 1.7rem; padding: 15px; width: 100%; margin-top: 20px; border-radius:15px;" onclick="startMealActivity()">🚀 반찬판 만들기 시작</button>
+        </div>
+
+        <div id="mealActivityView" class="hidden" style="width: 100%; max-width: 850px; display: flex; flex-direction: column; align-items: center;">
+            <div id="mealTabs" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 12px;"></div> 
+            
+            <div id="mealWorkspace" style="background-color: white; padding: 15px; border-radius: 15px; border: 2px solid #ccc; width: 100%; box-sizing: border-box;">
+                <div class="toolbar">
+                    <button class="mode-btn active" id="btnModeTrace" onclick="setMealMode('trace')">✍️ 따라그리기</button>
+                    <button class="mode-btn" id="btnModeScratch" onclick="setMealMode('scratch')">🖐️ 문지르기</button>
+                    <button class="mode-btn" id="btnModeStamp" onclick="setMealMode('stamp')">💮 콕! 찍기</button>
+                    <div id="brushTools" style="display:flex; gap:5px; margin-left:10px; border-left:2px solid #ccc; padding-left:10px;">
+                        <button class="brush-btn active" onclick="setMealBrushSize(8, this)">●</button>
+                        <button class="brush-btn" style="font-size:26px;" onclick="setMealBrushSize(15, this)">●</button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 10px; text-align: center; display: flex; justify-content: center; gap: 10px;">
+                    <button class="btn" style="background-color: #ff9800; padding: 10px 20px; font-size: 1.2rem;" onclick="speakCurrentMeal()">🔊 반찬 소리 듣기</button>
+                    <button class="btn" style="background-color: #f44336; padding: 10px 20px; font-size: 1.2rem;" onclick="renderMealCanvas()">🗑️ 지우기</button>
+                </div>
+                
+                <div id="canvasContainer">
+                    <div id="scratchContent">
+                        <div id="scEmoji" class="bg-emoji"></div>
+                    </div>
+                    <canvas id="drawingCanvas" width="1200" height="700"></canvas>
+                </div>
+                
+                <button class="btn" style="background-color: #9c27b0; font-size: 1.7rem; padding: 15px; margin-top: 15px; width: 100%; border-radius: 12px;" onclick="markMealDone()">✨ 참 잘했어요! (다음 칸으로)</button>
+            </div>
+            
+            <div id="finalButtonContainer" class="hidden" style="margin-top: 15px; width:100%;">
+                <button class="btn" style="background-color: #e91e63; font-size: 1.8rem; padding: 20px; width: 100%; border-radius: 15px;" onclick="showMealFinalBoard()">🎉 내가 만든 오늘의 급식판 보기 🎉</button>
+            </div>
+        </div>
+
+        <div id="mealFinalView" class="hidden" style="width: 100%; display:flex; flex-direction:column; align-items:center;">
+            <div style="font-size: 2rem; font-weight: bold; color: #d84315; margin-bottom: 12px;">🍽️ 내가 완성한 급식판 🍽️</div>
+            
+            <div id="trayContainer">
+                <img src="급식판.jpg" id="trayImage" alt="급식판" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIj7quInsh53tjJAg7J2066+47KeA66W8IOyWkeyXkCAn6ri47Iud7YyQLmpwZycg66GcIOy2lOqwgO2VtOupvCDrs7Tsn5Xri4jri6QuPC90ZXh0Pjwvc3ZnPg==';">
+                <div id="pos0" class="tray-text"></div><div id="pos1" class="tray-text"></div>
+                <div id="pos2" class="tray-text"></div><div id="pos3" class="tray-text"></div>
+                <div id="pos4" class="tray-text"></div><div id="pos5" class="tray-text"></div>
+            </div>
+            
+            <button class="btn" style="background-color: #555; padding: 10px 25px; margin-top: 15px; font-size: 1.2rem;" onclick="resetMealActivity()">🔄 급식 메뉴 다시 고르기</button>
+        </div>
+
+        <button class="btn-think-more" onclick="toggleAdvanced(this)" style="margin-top:15px;">🤔 더 생각하기 (내 입맛 알아보기)</button>
+        <div class="advanced-task">
+            <div class="adv-header">
+                <div class="adv-badge">⭐ 심화 과제: 호불호 표현하기</div>
+                <button class="btn-hint" onclick="showHint(4)">💡 힌트 보기</button>
+                <button class="btn-hint" style="background:#e8f5e9; border-color:#4caf50; color:#2e7d32;" onclick="speakSentence(4)">🔊 문장 읽기</button>
+            </div>
+            <div class="adv-content">
+                <p class="adv-text">반찬 그림을 터치하면 바구니로 쏙 이동하고 아래 퍼즐 조각도 생겨요!</p>
+
+                <div style="display: flex; gap: 15px; width: 100%; margin-bottom: 5px;">
+                    <div style="flex: 1; border: 3px dashed #4caf50; border-radius: 15px; padding: 15px; background: #e8f5e9; text-align: center; cursor:pointer;" onclick="tapDropMealBasket(this, 'like')">
+                        <div style="font-size: 1.35rem; font-weight: bold; color: #2e7d32; margin-bottom: 10px;">😍 좋아하는 반찬</div>
+                        <div id="basket-like" style="min-height: 75px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start;"></div>
+                    </div>
+                    <div style="flex: 1; border: 3px dashed #ff9800; border-radius: 15px; padding: 15px; background: #fff3e0; text-align: center; cursor:pointer;" onclick="tapDropMealBasket(this, 'dislike')">
+                        <div style="font-size: 1.35rem; font-weight: bold; color: #e65100; margin-bottom: 10px;">🤔 조금만 먹을 반찬</div>
+                        <div id="basket-dislike" style="min-height: 75px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start;"></div>
+                    </div>
+                </div>
+
+                <div id="meal-drag-pool" style="display: flex; flex-wrap: wrap; gap: 10px; padding: 15px; background: #fff; border-radius: 15px; border: 2px solid #ccc; min-height: 60px; justify-content: center; align-items: center;">
+                    <span id="meal-pool-placeholder" style="color:#999; font-weight:bold;">메뉴를 완성하면 그림 조각이 생겨요!</span>
+                </div>
+
+                <div class="sentence-display" id="sentence4">
+                    <div class="word-slot" data-hint="오늘" data-expect="오늘"></div>
+                    <div class="word-slot" data-hint="내가" data-expect="내가"></div>
+                    <div class="word-slot" data-hint="가장" data-expect="가장"></div>
+                    <div class="word-slot" data-hint="좋아하는" data-expect="좋아하는"></div>
+                    <div class="word-slot" data-hint="반찬은" data-expect="반찬은"></div>
+                    <div class="word-slot" data-hint="[그림]" data-role="food"></div>
+                    <div class="word-slot" data-hint="입니다." data-expect="입니다."></div>
+                </div>
+                <div class="word-pool" id="pool4">
+                    <div class="word-chip" onclick="tapWord(this, 4)">오늘</div>
+                    <div class="word-chip" onclick="tapWord(this, 4)">내가</div>
+                    <div class="word-chip" onclick="tapWord(this, 4)">가장</div>
+                    <div class="word-chip" onclick="tapWord(this, 4)">좋아하는</div>
+                    <div class="word-chip" onclick="tapWord(this, 4)">반찬은</div>
+                    <div class="word-chip" onclick="tapWord(this, 4)">입니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-footer">
+            <button class="btn btn-prev" onclick="move(3)">⬅️ 이전</button>
+            <button class="btn btn-next" onclick="move(6)">다음 활동으로 ➡️</button>
+        </div>
+    </section>
+
+    <!-- Step 6: 나의 감정 알아보기 (개인 전용 + 학생 실제 사진 헤더 적용) -->
+    <section class="step-section" id="step6">
+        <h2>🌡️ 나의 감정 알아보기</h2>
+        <p style="font-size:1.25rem; color:#e65100; font-weight:bold; margin:0;" id="emotionSubtitle">
+            💡 가운데 기분 얼굴을 콕콕 터치하거나 아래 막대를 움직여 오늘 기분을 표현해봐요!
+        </p>
+        
+        <div class="emotion-6grid single-mode" id="emotionGrid">
+            <div class="student-thermometer highlight" id="therm_김민주">
+                <div class="student-header">
+                    <img src="김민주.jpg" class="student-mini-photo" alt="김민주" onerror="handleImgError(this, '👧🏻')">
+                    <div class="student-name">김민주</div>
+                </div>
+                <div class="emotion-face-container" onclick="cycleEmo(1)"><div id="f1" class="emotion-face">😐</div></div>
+                <div id="t1" style="font-weight: bold; margin-bottom: 8px; color: #555; font-size: 1.4rem;">보통이에요.</div>
+                <input type="range" id="r1" min="0" max="100" value="50" oninput="upEmo(this.value, 1)" style="width:90%;">
+            </div>
+            <div class="student-thermometer" id="therm_김현우" style="display:none;">
+                <div class="student-header">
+                    <img src="김현우.jpg" class="student-mini-photo" alt="김현우" onerror="handleImgError(this, '👦🏻')">
+                    <div class="student-name">김현우</div>
+                </div>
+                <div class="emotion-face-container" onclick="cycleEmo(2)"><div id="f2" class="emotion-face">😐</div></div>
+                <div id="t2" style="font-weight: bold; margin-bottom: 8px; color: #555; font-size: 1.4rem;">보통이에요.</div>
+                <input type="range" id="r2" min="0" max="100" value="50" oninput="upEmo(this.value, 2)" style="width:90%;">
+            </div>
+            <div class="student-thermometer" id="therm_송민서" style="display:none;">
+                <div class="student-header">
+                    <img src="송민서.jpg" class="student-mini-photo" alt="송민서" onerror="handleImgError(this, '👧🏼')">
+                    <div class="student-name">송민서</div>
+                </div>
+                <div class="emotion-face-container" onclick="cycleEmo(3)"><div id="f3" class="emotion-face">😐</div></div>
+                <div id="t3" style="font-weight: bold; margin-bottom: 8px; color: #555; font-size: 1.4rem;">보통이에요.</div>
+                <input type="range" id="r3" min="0" max="100" value="50" oninput="upEmo(this.value, 3)" style="width:90%;">
+            </div>
+            <div class="student-thermometer" id="therm_엽건영" style="display:none;">
+                <div class="student-header">
+                    <img src="엽건영.jpg" class="student-mini-photo" alt="엽건영" onerror="handleImgError(this, '👦🏽')">
+                    <div class="student-name">엽건영</div>
+                </div>
+                <div class="emotion-face-container" onclick="cycleEmo(4)"><div id="f4" class="emotion-face">😐</div></div>
+                <div id="t4" style="font-weight: bold; margin-bottom: 8px; color: #555; font-size: 1.4rem;">보통이에요.</div>
+                <input type="range" id="r4" min="0" max="100" value="50" oninput="upEmo(this.value, 4)" style="width:90%;">
+            </div>
+            <div class="student-thermometer" id="therm_이 환" style="display:none;">
+                <div class="student-header">
+                    <img src="이 환.jpg" class="student-mini-photo" alt="이 환" onerror="handleImgError(this, '👦🏼')">
+                    <div class="student-name">이 환</div>
+                </div>
+                <div class="emotion-face-container" onclick="cycleEmo(5)"><div id="f5" class="emotion-face">😐</div></div>
+                <div id="t5" style="font-weight: bold; margin-bottom: 8px; color: #555; font-size: 1.4rem;">보통이에요.</div>
+                <input type="range" id="r5" min="0" max="100" value="50" oninput="upEmo(this.value, 5)" style="width:90%;">
+            </div>
+            <div class="student-thermometer" id="therm_임시은" style="display:none;">
+                <div class="student-header">
+                    <img src="임시은.jpg" class="student-mini-photo" alt="임시은" onerror="handleImgError(this, '👧🏽')">
+                    <div class="student-name">임시은</div>
+                </div>
+                <div class="emotion-face-container" onclick="cycleEmo(6)"><div id="f6" class="emotion-face">😐</div></div>
+                <div id="t6" style="font-weight: bold; margin-bottom: 8px; color: #555; font-size: 1.4rem;">보통이에요.</div>
+                <input type="range" id="r6" min="0" max="100" value="50" oninput="upEmo(this.value, 6)" style="width:90%;">
+            </div>
+        </div>
+
+        <button class="btn-think-more" onclick="toggleAdvanced(this)">🤔 더 생각하기</button>
+        <div class="advanced-task">
+            <div class="adv-header">
+                <div class="adv-badge">⭐ 심화 과제</div>
+                <button class="btn-hint" onclick="showHint(6)">💡 힌트 보기</button>
+                <button class="btn-hint" style="background:#e8f5e9; border-color:#4caf50; color:#2e7d32;" onclick="speakSentence(6)">🔊 문장 읽기</button>
+            </div>
+            <div class="adv-content">
+                <p class="adv-text">위에 있는 '기분 얼굴(이모지)'을 터치하면 감정 단어가 뿅 나타나요!</p>
+                <div class="sentence-display" id="sentence6">
+                    <div class="word-slot" data-hint="오늘" data-expect="오늘"></div>
+                    <div class="word-slot" data-hint="나는" data-expect="나는"></div>
+                    <div class="word-slot" data-hint="기분이" data-expect="기분이"></div>
+                    <div class="word-slot" data-hint="O감정" data-role="emotion"></div>
+                </div>
+                <div class="word-pool" id="pool6">
+                    <div class="word-chip" onclick="tapWord(this, 6)">오늘</div>
+                    <div class="word-chip" onclick="tapWord(this, 6)">나는</div>
+                    <div class="word-chip" onclick="tapWord(this, 6)">기분이</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-footer">
+            <button class="btn btn-prev" onclick="move(4)">⬅️ 이전</button>
+            <button class="btn btn-next" onclick="move(7)">오늘의 정보 한눈에 보기 ➡️</button>
+        </div>
+    </section>
+
+    <!-- Step 7: 오늘의 알림판 (개인 대시보드) -->
+    <section class="step-section" id="step7">
+        <h2>🌟 오늘의 알림판 🌟</h2>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 12px;">
+            <h3 id="finalGreeting" style="font-size:1.6rem; color:#e65100; margin:0;"></h3>
+            <button class="btn-hint" style="background:#e8f5e9; border-color:#4caf50; color:#2e7d32;" onclick="speakFinalSummary()">🔊 내 알림판 읽기</button>
+        </div>
+        
+        <div class="summary-grid">
+            <div class="summary-card" id="card-emotion">
+                <h3>🌡️ 오늘의 기분</h3>
+                <div id="res-emotion" style="width:100%; flex:1; display:flex; justify-content:center; align-items:center;"></div>
+            </div>
+            <div class="summary-card" id="card-date">
+                <h3>📅 오늘 날짜</h3>
+                <div id="res-date" style="font-size:1.5rem; font-weight:bold; color:#00796b; text-align:center;"></div>
+            </div>
+            <div class="summary-card" id="card-weather">
+                <h3>☀️ 오늘 날씨</h3>
+                <div id="res-weather" style="font-size:1.6rem; font-weight:bold; color:#e65100; text-align:center;"></div>
+            </div>
+
+            <div class="summary-card" id="card-timetable">
+                <h3>📊 오늘의 수업</h3>
+                <div id="res-timetable" style="width:100%;"></div>
+            </div>
+            <div class="summary-card" id="card-meal">
+                <h3>😋 오늘의 급식</h3>
+                <div id="res-meal" style="width:100%; display:flex; justify-content:center; align-items:flex-start;"></div>
+            </div>
+        </div>
+
+        <div class="nav-footer" style="margin-bottom:20px; padding:0;">
+            <button class="btn btn-prev" onclick="move(6)">⬅️ 이전</button>
+            <button class="btn btn-next" style="background:#d32f2f;" onclick="resetAllAndClearStorage()">처음으로 (전체 초기화)</button>
+        </div>
+    </section>
+</div>
+
+<script>
+    const STORAGE_KEY = 'haru_hanjang_oct_personal_v1';
+    let isRestoring = false; // 복구 중 중복 저장 및 불필요한 음성 출력 방지 플래그
+
+    const STUDENT_FALLBACK_EMOJI = {
+        '김민주': '👧🏻', '김현우': '👦🏻', '송민서': '👧🏼',
+        '엽건영': '👦🏽', '이 환': '👦🏼', '임시은': '👧🏽'
+    };
+
+    function handleImgError(imgEl, fallbackEmoji) {
+        imgEl.onerror = null;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><circle cx="60" cy="60" r="60" fill="#e1f5fe"/><text x="50%" y="56%" font-size="65" text-anchor="middle" alignment-baseline="middle">${fallbackEmoji}</text></svg>`;
+        imgEl.src = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+    }
+
+    function speakText(text) {
+        if (isRestoring) return; // 새로고침 복구 시에는 음성 생략
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'ko-KR';
+            utter.rate = 0.92;
+            window.speechSynthesis.speak(utter);
+        }
+    }
+
+    function fireConfetti(amount) {
+        if (isRestoring) return;
+        const colors = ['#f44336', '#e91e63', '#9c27b0', '#2196f3', '#4caf50', '#ffeb3b', '#ff9800'];
+        for (let i = 0; i < amount; i++) {
+            let confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.width = confetti.style.height = (Math.random() * 10 + 10) + 'px';
+            confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 4000);
+        }
+    }
+
+    const EMOJI_LABEL_MAP = {
+        '🍚': '밥', '🍲': '국', '🍖': '고기반찬', '🐟': '생선반찬',
+        '🥬': '나물반찬', '🌶️': '김치', '🍤': '튀김반찬', '🥚': '계란반찬',
+        '🍜': '면요리', '🍎': '과일', '🥛': '우유', '🍰': '간식'
+    };
+
+    const WEATHER_ICON_MAP = {
+        '맑음': '☀️', '흐림': '☁️', '비': '🌧️',
+        '눈': '❄️', '바람': '🌬️', '공기나쁨': '😷'
+    };
+
+    let activeStudent = "";
+    let selectedDayNum = null;
+    let selectedWeatherName = "";
+    const studentNames = ['김민주', '김현우', '송민서', '엽건영', '이 환', '임시은'];
+    let activeTimetableZone = null;
+
+    let currentStep = 0;
+    const totalSteps = 7; 
+
+    let mealMenus = [];
+    let mealStatus = [false, false, false, false, false, false];
+    let currentMealIndex = 0;
+    let currentMealMode = 'trace'; 
+    let mealBrushSize = 15;
+    let isMealDrawing = false;
+    let currentTargetMenuIndex = 0;
+
+    const EMO_STATES = [
+        { val: 95, face: "😍", text: "신나요!", color: "#ff9800" },
+        { val: 75, face: "😊", text: "좋아요.", color: "#4caf50" },
+        { val: 50, face: "😐", text: "보통이에요.", color: "#555555" },
+        { val: 25, face: "😢", text: "속상해요.", color: "#42a5f5" },
+        { val: 10, face: "😴", text: "피곤해요.", color: "#9e9e9e" }
+    ];
+    let studentEmoIndex = { 1: 2, 2: 2, 3: 2, 4: 2, 5: 2, 6: 2 };
+
+    /* =========================================================
+       💾 실시간 자동 저장 및 새로고침(F5) 복구 시스템
+       ========================================================= */
+    function getTodayDateString() {
+        const d = new Date();
+        return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    }
+
+    function saveAppState() {
+        if (isRestoring) return;
+        try {
+            // 시간표 상태 수집
+            const timetable = [];
+            document.querySelectorAll('#step3 .drop-zone[data-type="sub"]').forEach(z => {
+                timetable.push({
+                    text: z.innerText.trim(),
+                    isSpecial: z.style.background.includes('255, 235, 238') || z.style.background.includes('#ffebee')
+                });
+            });
+
+            // 급식 설정 값 수집
+            const mealSetup = [];
+            for (let i = 0; i < 6; i++) {
+                mealSetup.push({
+                    emoji: document.getElementById(`m${i}_emoji_val`).value,
+                    label: document.getElementById(`m${i}_label_val`).value
+                });
+            }
+
+            // 급식 현재 화면 모드 확인
+            let mealViewState = 'setup';
+            if (!document.getElementById('mealFinalView').classList.contains('hidden')) mealViewState = 'final';
+            else if (!document.getElementById('mealActivityView').classList.contains('hidden')) mealViewState = 'activity';
+
+            // 급식 바구니 배치 상태 수집
+            const mealBaskets = { pool: [], like: [], dislike: [] };
+            document.querySelectorAll('#meal-drag-pool > div').forEach(el => {
+                mealBaskets.pool.push({ emoji: el.getAttribute('data-text'), label: el.getAttribute('data-label') });
+            });
+            document.querySelectorAll('#basket-like > div').forEach(el => {
+                mealBaskets.like.push({ emoji: el.getAttribute('data-text'), label: el.getAttribute('data-label') });
+            });
+            document.querySelectorAll('#basket-dislike > div').forEach(el => {
+                mealBaskets.dislike.push({ emoji: el.getAttribute('data-text'), label: el.getAttribute('data-label') });
+            });
+
+            // 감정 슬라이더 값 수집
+            const emoValues = {};
+            for (let i = 1; i <= 6; i++) {
+                emoValues[i] = document.getElementById(`r${i}`).value;
+            }
+
+            // 문장 퍼즐 채움 여부 수집
+            const filledPuzzles = {};
+            [1, 2, 3, 4, 6].forEach(stepId => {
+                const slots = Array.from(document.querySelectorAll(`#sentence${stepId} .word-slot`));
+                filledPuzzles[stepId] = slots.map(s => s.children.length > 0 ? s.children[0].innerText.trim() : null);
+            });
+
+            const state = {
+                savedDate: getTodayDateString(),
+                activeStudent,
+                currentStep,
+                selectedDayNum,
+                selectedWeatherName,
+                timetable,
+                mealSetup,
+                mealMenus,
+                mealStatus,
+                currentMealIndex,
+                mealViewState,
+                mealBaskets,
+                studentEmoIndex,
+                emoValues,
+                filledPuzzles
+            };
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+            console.warn('자동 저장 실패:', e);
+        }
+    }
+
+    function loadAppState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            const state = JSON.parse(raw);
+
+            // 날짜가 바뀌었으면 어제 기록은 자동 삭제 후 새로 시작
+            if (state.savedDate !== getTodayDateString()) {
+                localStorage.removeItem(STORAGE_KEY);
+                return;
+            }
+
+            isRestoring = true;
+
+            // 1. 학생 선택 복구
+            if (state.activeStudent) {
+                const card = document.querySelector(`.name-card[data-name="${state.activeStudent}"]`);
+                if (card) selectStudent(card, state.activeStudent);
+            }
+
+            // 2. 달력 날짜 복구
+            if (state.selectedDayNum) {
+                const dayEl = document.querySelector(`#step1 .day[data-day="${state.selectedDayNum}"]`);
+                if (dayEl) selectDay(dayEl, state.selectedDayNum);
+            }
+
+            // 3. 날씨 복구
+            if (state.selectedWeatherName) {
+                const wEl = document.querySelector(`#step2 .w-item[data-weather="${state.selectedWeatherName}"]`);
+                if (wEl) selectWeather(wEl, state.selectedWeatherName, WEATHER_ICON_MAP[state.selectedWeatherName] || '☀️');
+            }
+
+            // 4. 시간표 복구
+            if (Array.isArray(state.timetable)) {
+                const zones = document.querySelectorAll('#step3 .drop-zone[data-type="sub"]');
+                state.timetable.forEach((item, idx) => {
+                    if (zones[idx] && item.text) {
+                        applyZoneStyle(zones[idx], item.text, item.isSpecial);
+                        const cleanSubj = item.text.replace(/[^가-힣0-9\s]/g, '').trim();
+                        generateOrUpdateWord(3, 'subject', item.text, cleanSubj);
+                    }
+                });
+            }
+
+            // 5. 급식 복구
+            if (Array.isArray(state.mealSetup)) {
+                state.mealSetup.forEach((m, i) => {
+                    if (m.emoji) {
+                        document.getElementById(`btn_m${i}_icon`).innerHTML = m.emoji;
+                        document.getElementById(`m${i}_emoji_val`).value = m.emoji;
+                        document.getElementById(`m${i}_label_val`).value = m.label || '반찬';
+                    }
+                });
+            }
+
+            if (state.mealViewState === 'activity' || state.mealViewState === 'final') {
+                mealMenus = state.mealMenus || [];
+                mealStatus = state.mealStatus || [false, false, false, false, false, false];
+                currentMealIndex = state.currentMealIndex || 0;
+
+                document.getElementById('mealSetupView').classList.add('hidden');
+                document.getElementById('mealActivityView').classList.remove('hidden');
+                renderMealTabs();
+                renderMealCanvas();
+
+                if ( mealStatus.every(s => s === true) ) {
+                    document.getElementById('mealWorkspace').classList.add('hidden');
+                    document.getElementById('finalButtonContainer').classList.remove('hidden');
+                }
+
+                if (state.mealViewState === 'final') {
+                    showMealFinalBoard();
+                }
+
+                // 바구니 조각 복구
+                if (state.mealBaskets) {
+                    const ph = document.getElementById('meal-pool-placeholder');
+                    const totalItems = (state.mealBaskets.pool.length + state.mealBaskets.like.length + state.mealBaskets.dislike.length);
+                    if (totalItems > 0 && ph) ph.style.display = 'none';
+
+                    const restoreBasketChip = (item, containerId, borderColor) => {
+                        const dragItem = createMealBasketItem(item.emoji, item.label);
+                        dragItem.style.borderColor = borderColor;
+                        document.getElementById(containerId).appendChild(dragItem);
+                        if (containerId === 'basket-like') {
+                            generateOrUpdateWord(4, 'food', item.emoji, item.label);
+                        }
+                    };
+
+                    state.mealBaskets.pool.forEach(item => restoreBasketChip(item, 'meal-drag-pool', '#ff9800'));
+                    state.mealBaskets.like.forEach(item => restoreBasketChip(item, 'basket-like', '#4caf50'));
+                    state.mealBaskets.dislike.forEach(item => restoreBasketChip(item, 'basket-dislike', '#ff9800'));
+                }
+            }
+
+            // 6. 감정 복구
+            if (state.studentEmoIndex) studentEmoIndex = state.studentEmoIndex;
+            if (state.emoValues) {
+                for (let i = 1; i <= 6; i++) {
+                    if (state.emoValues[i] !== undefined) {
+                        const rInput = document.getElementById(`r${i}`);
+                        if (rInput) {
+                            rInput.value = state.emoValues[i];
+                            upEmo(state.emoValues[i], i);
+                        }
+                    }
+                }
+            }
+
+            // 7. 문장 퍼즐 슬롯 복구
+            if (state.filledPuzzles) {
+                [1, 2, 3, 4, 6].forEach(stepId => {
+                    const savedSlots = state.filledPuzzles[stepId];
+                    if (!Array.isArray(savedSlots)) return;
+                    const slots = Array.from(document.querySelectorAll(`#sentence${stepId} .word-slot`));
+                    const pool = document.getElementById(`pool${stepId}`);
+                    savedSlots.forEach((txt, sIdx) => {
+                        if (!txt || !slots[sIdx]) return;
+                        const chip = Array.from(pool.children).find(c => c.innerText.trim() === txt);
+                        if (chip) {
+                            slots[sIdx].appendChild(chip);
+                            slots[sIdx].classList.add('filled');
+                        }
+                    });
+                });
+            }
+
+            // 8. 진행 중이던 단계(Step)로 이동
+            if (typeof state.currentStep === 'number' && state.currentStep >= 0) {
+                move(state.currentStep);
+            }
+
+            isRestoring = false;
+
+            // 복구 알림 배너 잠깐 표시
+            if (state.activeStudent || state.currentStep > 0) {
+                const toast = document.getElementById('restoreToast');
+                toast.style.display = 'block';
+                setTimeout(() => { toast.style.display = 'none'; }, 2500);
+            }
+        } catch (e) {
+            isRestoring = false;
+            console.warn('저장된 상태 복구 중 오류:', e);
+        }
+    }
+
+    function resetAllAndClearStorage() {
+        if (confirm("정말 처음부터 다시 시작할까요?\n지금까지 한 활동이 모두 초기화됩니다.")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        [1, 2, 3, 4, 6].forEach(i => shufflePool(i));
+        initMealCanvasEvents();
+        loadAppState(); // 페이지가 열릴 때 저장된 진행 상태 자동 복구
+    });
+
+    function selectStudent(el, name) {
+        document.querySelectorAll('.name-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        
+        activeStudent = name;
+        document.getElementById('btnStart').style.display = 'block';
+        speakText(`${name} 학생, 반갑습니다! 수업을 시작해 볼까요?`);
+        
+        document.getElementById('emotionSubtitle').innerText = `💡 ${name} 학생, 가운데 기분 얼굴을 콕콕 터치하거나 막대를 움직여 기분을 표현해봐요!`;
+        
+        document.querySelectorAll('.student-thermometer').forEach(t => {
+            if (t.id === 'therm_' + name) {
+                t.style.display = 'flex'; 
+                t.classList.add('highlight');
+            } else {
+                t.style.display = 'none'; 
+                t.classList.remove('highlight');
+            }
+        });
+        saveAppState();
+    }
+
+    function move(step) {
+        document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`step${step}`).classList.add('active');
+        document.getElementById('progressBar').style.width = ((step + 1) / (totalSteps + 1)) * 100 + "%";
+        currentStep = step;
+        
+        if(step === 4 && !document.getElementById('mealActivityView').classList.contains('hidden')) {
+            setTimeout(() => renderMealCanvas(), 50);
+        }
+        if(step === 7) {
+            updateSummaryBoard();
+            fireConfetti(35);
+        }
+        saveAppState();
+    }
+
+    function toggleAdvanced(btn) {
+        const taskDiv = btn.nextElementSibling;
+        if (taskDiv.classList.contains('show')) {
+            taskDiv.classList.remove('show');
+            btn.innerHTML = "🤔 더 생각하기";
+            btn.style.background = "#e8eaf6";
+            btn.style.color = "#3f51b5";
+        } else {
+            taskDiv.classList.add('show');
+            btn.innerHTML = "🔽 심화 과제 닫기";
+            btn.style.background = "#5c6bc0";
+            btn.style.color = "white";
+        }
+    }
+
+    function showHint(stepId) {
+        let slots = document.querySelectorAll(`#sentence${stepId} .word-slot`);
+        slots.forEach(slot => {
+            slot.classList.add('show-hint');
+            setTimeout(() => slot.classList.remove('show-hint'), 3500);
+        });
+    }
+
+    function shufflePool(stepId) {
+        const pool = document.getElementById(`pool${stepId}`);
+        if(!pool) return;
+        const chips = Array.from(pool.children);
+        chips.sort(() => Math.random() - 0.5); 
+        chips.forEach(chip => pool.appendChild(chip)); 
+    }
+
+    function generateOrUpdateWord(stepId, roleType, text, spokenOverride) {
+        const pool = document.getElementById(`pool${stepId}`);
+        if(!pool) return;
+        let existing = document.querySelector(`#step${stepId} .dynamic-${roleType}`);
+        
+        if (existing) {
+            existing.innerText = text;
+            existing.setAttribute('data-role', roleType);
+            if (spokenOverride) existing.setAttribute('data-spoken', spokenOverride);
+            existing.classList.remove('pop-animation');
+            void existing.offsetWidth; 
+            existing.classList.add('pop-animation');
+            
+            if (existing.parentElement.classList.contains('word-slot')) {
+                const parentSlot = existing.parentElement;
+                pool.appendChild(existing);
+                parentSlot.classList.remove('filled');
+            }
+        } else {
+            const chip = document.createElement('div');
+            chip.className = `word-chip dynamic-word dynamic-${roleType} pop-animation`;
+            chip.setAttribute('data-role', roleType);
+            if (spokenOverride) chip.setAttribute('data-spoken', spokenOverride);
+            chip.innerText = text;
+            chip.onclick = function() { tapWord(this, stepId); };
+            pool.appendChild(chip);
+        }
+        shufflePool(stepId);
+    }
+
+    function tapWord(el, stepId) {
+        const slots = Array.from(document.querySelectorAll(`#sentence${stepId} .word-slot`));
+        const pool = document.getElementById(`pool${stepId}`);
+
+        if (el.parentElement.classList.contains('word-pool')) {
+            const chipRole = el.getAttribute('data-role');
+            const chipText = el.innerText.trim();
+
+            let targetSlot = slots.find(slot => {
+                if (slot.children.length > 0) return false;
+                if (chipRole && slot.getAttribute('data-role') === chipRole) return true;
+                if (!chipRole && slot.getAttribute('data-expect') === chipText) return true;
+                return false;
+            });
+
+            if (!targetSlot) {
+                targetSlot = slots.find(slot => slot.children.length === 0);
+            }
+
+            if (targetSlot) {
+                targetSlot.appendChild(el);
+                targetSlot.classList.add('filled');
+                const spoken = el.getAttribute('data-spoken') || EMOJI_LABEL_MAP[chipText] || chipText.replace(/[^가-힣0-9\s]/g, '');
+                speakText(spoken);
+
+                if (slots.every(s => s.children.length > 0)) {
+                    fireConfetti(25);
+                    setTimeout(() => speakSentence(stepId), 600);
+                }
+            }
+        } else {
+            const parentSlot = el.parentElement;
+            pool.appendChild(el);
+            parentSlot.classList.remove('filled');
+        }
+        saveAppState();
+    }
+
+    function speakSentence(stepId) {
+        const slots = Array.from(document.querySelectorAll(`#sentence${stepId} .word-slot`));
+        const words = slots.map(s => {
+            if (s.children.length === 0) return '';
+            const chip = s.children[0];
+            const raw = chip.innerText.trim();
+            return chip.getAttribute('data-spoken') || EMOJI_LABEL_MAP[raw] || raw.replace(/[\p{Emoji}\u200d]/gu, '').trim();
+        }).filter(Boolean);
+
+        if (words.length > 0) {
+            speakText(words.join(' '));
+        } else {
+            speakText('단어 카드를 눌러 문장을 먼저 완성해 보세요.');
+        }
+    }
+
+    function selectDay(el, day) {
+        selectedDayNum = day;
+        document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
+        el.classList.add('selected');
+        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayOfWeek = weekDays[(day + 3) % 7]; 
+        document.getElementById('dateText').innerHTML = `오늘은 <span style="color:#d32f2f; text-decoration:underline;">10월 ${day}일 ${dayOfWeek}요일</span> 입니다!`;
+        
+        speakText(`10월 ${day}일 ${dayOfWeek}요일`);
+
+        generateOrUpdateWord(1, 'day', day + '일');
+        generateOrUpdateWord(1, 'weekday', dayOfWeek + '요일');
+        let eventSpan = el.querySelector('span');
+        let eventClean = eventSpan ? eventSpan.innerText.replace(/[^가-힣0-9\s]/g, '').trim() : "열심히 공부";
+        generateOrUpdateWord(1, 'event', eventClean + '(을)를', eventClean + '을');
+        saveAppState();
+    }
+    
+    function selectWeather(el, text, icon) {
+        selectedWeatherName = text;
+        document.querySelectorAll('.w-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('weatherText').innerHTML = `${icon} ${text}`;
+        speakText(`오늘 날씨는 ${text}입니다.`);
+        generateOrUpdateWord(2, 'weather', text);
+        saveAppState();
+    }
+
+    function togglePool() {
+        const pool = document.getElementById('itemPool');
+        pool.style.display = (pool.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function handleZoneClick(el) {
+        if (el.innerText.trim() !== "") {
+            el.innerText = "";
+            el.style.background = "#fafafa";
+            el.style.color = "#333";
+        }
+
+        if (activeTimetableZone === el) {
+            el.classList.remove('target-active');
+            activeTimetableZone = null;
+        } else {
+            document.querySelectorAll('#step3 .drop-zone').forEach(z => z.classList.remove('target-active'));
+            el.classList.add('target-active');
+            activeTimetableZone = el;
+        }
+        saveAppState();
+    }
+
+    function applyZoneStyle(zone, text, isSpecial) {
+        zone.innerText = text;
+        if (isSpecial) {
+            zone.style.background = "#ffebee";
+            zone.style.color = "#d32f2f";
+        } else {
+            zone.style.background = "#f1f8e9";
+            zone.style.color = "#2e7d32";
+        }
+    }
+
+    function autoFill(el, type) {
+        const text = el.innerText;
+        const isSpecial = el.classList.contains('special');
+        const cleanSubj = text.replace(/[^가-힣0-9\s]/g, '').trim();
+
+        if (activeTimetableZone) {
+            applyZoneStyle(activeTimetableZone, text, isSpecial);
+            activeTimetableZone.classList.remove('target-active');
+            activeTimetableZone = null;
+        } else {
+            const zones = document.querySelectorAll(`#step3 .drop-zone[data-type="${type}"]`);
+            for (let i = 0; i < zones.length; i++) {
+                if (zones[i].innerText.trim() === "") {
+                    applyZoneStyle(zones[i], text, isSpecial);
+                    break;
+                }
+            }
+        }
+        speakText(cleanSubj);
+        if(type === 'sub') generateOrUpdateWord(3, 'subject', text, cleanSubj);
+        saveAppState();
+    }
+
+    /* === 급식 활동 === */
+    function openCategoryModal(index) {
+        currentTargetMenuIndex = index;
+        document.getElementById('categoryModal').style.display = 'flex';
+    }
+    function closeCategoryModal() {
+        document.getElementById('categoryModal').style.display = 'none';
+    }
+    
+    function selectMealCategory(emoji, label) {
+        document.getElementById('btn_m' + currentTargetMenuIndex + '_icon').innerHTML = emoji;
+        document.getElementById('m' + currentTargetMenuIndex + '_emoji_val').value = emoji;
+        document.getElementById('m' + currentTargetMenuIndex + '_label_val').value = label;
+        speakText(label);
+        closeCategoryModal();
+        saveAppState();
+    }
+
+    function startMealActivity() {
+        for(let i=0; i<6; i++) {
+            let val = document.getElementById('m' + i + '_emoji_val').value;
+            let lbl = document.getElementById('m' + i + '_label_val').value;
+            if(val === '❓' || val === '') {
+                speakText("물음표 칸을 눌러 모든 반찬 그림을 골라주세요!");
+                alert("모든 칸에 알맞은 반찬 그림을 선택해주세요!");
+                return;
+            }
+            mealMenus[i] = { emoji: val, label: lbl };
+        }
+        document.getElementById('mealSetupView').classList.add('hidden');
+        document.getElementById('mealActivityView').classList.remove('hidden');
+        renderMealTabs();
+        selectMealMenu(0);
+        saveAppState();
+    }
+
+    function renderMealTabs() {
+        const tabsDiv = document.getElementById('mealTabs');
+        tabsDiv.innerHTML = '';
+        for(let i=0; i<6; i++) {
+            if (!mealMenus[i]) continue;
+            let btn = document.createElement('button');
+            btn.className = 'menu-tab-btn' + (mealStatus[i] ? ' done' : '') + (currentMealIndex === i ? ' active' : '');
+            btn.innerHTML = (mealStatus[i] ? '⭐' : '') + mealMenus[i].emoji;
+            btn.onclick = () => selectMealMenu(i);
+            tabsDiv.appendChild(btn);
+        }
+    }
+
+    function speakCurrentMeal() {
+        if (mealMenus[currentMealIndex]) {
+            speakText(mealMenus[currentMealIndex].label);
+        }
+    }
+
+    function selectMealMenu(index) {
+        currentMealIndex = index;
+        renderMealTabs();
+        speakCurrentMeal();
+        renderMealCanvas();
+        saveAppState();
+    }
+
+    function setMealMode(mode) {
+        currentMealMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        if(mode === 'trace') document.getElementById('btnModeTrace').classList.add('active');
+        if(mode === 'scratch') document.getElementById('btnModeScratch').classList.add('active');
+        if(mode === 'stamp') document.getElementById('btnModeStamp').classList.add('active');
+        document.getElementById('brushTools').style.display = (mode === 'trace') ? 'flex' : 'none';
+        renderMealCanvas();
+    }
+
+    function setMealBrushSize(size, btnElement) {
+        mealBrushSize = size;
+        document.querySelectorAll('.brush-btn').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
+    function renderMealCanvas() {
+        const mealCanvas = document.getElementById('drawingCanvas');
+        if (!mealCanvas || mealCanvas.offsetWidth === 0) return;
+        const ctx = mealCanvas.getContext('2d');
+        mealCanvas.width = mealCanvas.offsetWidth * 2;
+        mealCanvas.height = mealCanvas.offsetHeight * 2;
+        ctx.scale(2, 2); 
+        
+        const w = mealCanvas.offsetWidth;
+        const h = mealCanvas.offsetHeight;
+        if (!mealMenus[currentMealIndex]) return;
+
+        const emoji = mealMenus[currentMealIndex].emoji;
+        const scContent = document.getElementById('scratchContent');
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.clearRect(0, 0, w, h);
+
+        if (currentMealMode === 'trace') {
+            scContent.style.display = 'none';
+            ctx.font = "140px Arial";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.22)"; 
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(emoji, w/2, h/2);
+            
+            ctx.strokeStyle = "#3f51b5"; 
+            ctx.lineWidth = mealBrushSize;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+        } else if (currentMealMode === 'scratch') {
+            scContent.style.display = 'flex';
+            document.getElementById('scEmoji').innerText = emoji;
+            
+            ctx.fillStyle = "#b0bec5";
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = "#607d8b";
+            ctx.font = "bold 28px 'Malgun Gothic'";
+            ctx.textAlign = "center";
+            ctx.fillText("🖐️ 손가락으로 화면을 문질러보세요!", w/2, h/2);
+            
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 70; 
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+        } else if (currentMealMode === 'stamp') {
+            scContent.style.display = 'none';
+            ctx.fillStyle = "#bdbdbd";
+            ctx.font = "bold 28px 'Malgun Gothic'";
+            ctx.textAlign = "center";
+            ctx.fillText("👇 화면 아무 곳이나 콕! 찍어보세요", w/2, h/2);
+        }
+    }
+
+    function getMealCoords(e) {
+        const mealCanvas = document.getElementById('drawingCanvas');
+        const rect = mealCanvas.getBoundingClientRect();
+        let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function startMealDrawing(e) {
+        e.preventDefault();
+        if (currentMealMode === 'stamp') {
+            const mealCanvas = document.getElementById('drawingCanvas');
+            const ctx = mealCanvas.getContext('2d');
+            const w = mealCanvas.offsetWidth;
+            const h = mealCanvas.offsetHeight;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.clearRect(0, 0, w, h);
+            
+            ctx.font = "130px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(mealMenus[currentMealIndex].emoji, w/2, h/2);
+            speakCurrentMeal();
+            fireConfetti(10);
+            return;
+        }
+        isMealDrawing = true;
+        const ctx = document.getElementById('drawingCanvas').getContext('2d');
+        const { x, y } = getMealCoords(e);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+
+    function drawMeal(e) {
+        if (!isMealDrawing || currentMealMode === 'stamp') return;
+        e.preventDefault();
+        const ctx = document.getElementById('drawingCanvas').getContext('2d');
+        const { x, y } = getMealCoords(e);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+
+    function stopMealDrawing() { isMealDrawing = false; }
+
+    function initMealCanvasEvents() {
+        const mealCanvas = document.getElementById('drawingCanvas');
+        if(mealCanvas) {
+            mealCanvas.addEventListener('mousedown', startMealDrawing);
+            mealCanvas.addEventListener('mousemove', drawMeal);
+            mealCanvas.addEventListener('mouseup', stopMealDrawing);
+            mealCanvas.addEventListener('mouseout', stopMealDrawing);
+            mealCanvas.addEventListener('touchstart', startMealDrawing, {passive: false});
+            mealCanvas.addEventListener('touchmove', drawMeal, {passive: false});
+            mealCanvas.addEventListener('touchend', stopMealDrawing);
+        }
+    }
+
+    let selectedTapMealItem = null;
+
+    function createMealBasketItem(emoji, label) {
+        const dragItem = document.createElement('div');
+        dragItem.className = 'pop-animation';
+        dragItem.style.cssText = "font-size: 2.5rem; width: 62px; height: 62px; display:flex; justify-content:center; align-items:center; background: white; border: 3px solid #ff9800; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);";
+        dragItem.innerText = emoji;
+        dragItem.setAttribute('data-text', emoji);
+        dragItem.setAttribute('data-label', label);
+        
+        dragItem.onclick = function(ev) {
+            ev.stopPropagation();
+            const likeBasket = document.getElementById('basket-like');
+            const dislikeBasket = document.getElementById('basket-dislike');
+
+            if (this.parentElement.id === 'meal-drag-pool' || this.parentElement.id === 'basket-dislike') {
+                likeBasket.appendChild(this);
+                this.style.borderColor = '#4caf50';
+            } else {
+                dislikeBasket.appendChild(this);
+                this.style.borderColor = '#ff9800';
+            }
+
+            selectedTapMealItem = this;
+            speakText(this.getAttribute('data-label'));
+            generateOrUpdateWord(4, 'food', this.getAttribute('data-text'), this.getAttribute('data-label'));
+            saveAppState();
+        };
+        return dragItem;
+    }
+    
+    function markMealDone() {
+        if (mealStatus[currentMealIndex]) return;
+        mealStatus[currentMealIndex] = true;
+        fireConfetti(30);
+        renderMealTabs();
+        
+        const mealPool = document.getElementById('meal-drag-pool');
+        const ph = document.getElementById('meal-pool-placeholder');
+        if (ph) ph.style.display = 'none';
+
+        const emoji = mealMenus[currentMealIndex].emoji;
+        const label = mealMenus[currentMealIndex].label;
+
+        const dragItem = createMealBasketItem(emoji, label);
+        mealPool.appendChild(dragItem);
+        
+        if(mealStatus.every(s => s === true)) {
+            document.getElementById('mealWorkspace').classList.add('hidden');
+            document.getElementById('finalButtonContainer').classList.remove('hidden');
+        } else {
+            let nextIndex = mealStatus.findIndex(s => s === false);
+            if(nextIndex !== -1) setTimeout(() => selectMealMenu(nextIndex), 800); 
+        }
+        saveAppState();
+    }
+
+    function tapDropMealBasket(basketDiv, type) {
+        if(selectedTapMealItem) {
+            const targetContainer = basketDiv.querySelector('div[id^="basket-"]');
+            targetContainer.appendChild(selectedTapMealItem);
+            selectedTapMealItem.style.borderColor = (type === 'like') ? '#4caf50' : '#ff9800';
+            
+            if (type === 'like') {
+                generateOrUpdateWord(4, 'food', selectedTapMealItem.getAttribute('data-text'), selectedTapMealItem.getAttribute('data-label'));
+            }
+            selectedTapMealItem = null;
+            saveAppState();
+        }
+    }
+
+    function showMealFinalBoard() {
+        document.getElementById('mealActivityView').classList.add('hidden');
+        document.getElementById('mealFinalView').classList.remove('hidden');
+        for(let i=0; i<6; i++) {
+            if (mealMenus[i]) {
+                document.getElementById('pos' + i).innerHTML = `<span class="tray-emoji" style="margin:0;">${mealMenus[i].emoji}</span>`;
+            }
+        }
+        speakText("우와! 오늘의 급식판이 완성되었어요!");
+        saveAppState();
+    }
+
+    function resetMealActivity() {
+        mealStatus = [false, false, false, false, false, false];
+        document.getElementById('mealFinalView').classList.add('hidden');
+        document.getElementById('mealActivityView').classList.add('hidden');
+        document.getElementById('finalButtonContainer').classList.add('hidden');
+        document.getElementById('mealWorkspace').classList.remove('hidden');
+        document.getElementById('mealSetupView').classList.remove('hidden');
+        
+        for(let i=0; i<6; i++) {
+            document.getElementById('btn_m' + i + '_icon').innerText = '❓';
+            document.getElementById('m' + i + '_emoji_val').value = '❓';
+        }
+
+        document.getElementById('basket-like').innerHTML = '';
+        document.getElementById('basket-dislike').innerHTML = '';
+        document.getElementById('meal-drag-pool').innerHTML = '<span id="meal-pool-placeholder" style="color:#999; font-weight:bold;">메뉴를 완성하면 그림 조각이 생겨요!</span>';
+        saveAppState();
+    }
+
+    /* === 감정 온도계 === */
+    function cycleEmo(id) {
+        studentEmoIndex[id] = (studentEmoIndex[id] + 1) % EMO_STATES.length;
+        const st = EMO_STATES[studentEmoIndex[id]];
+        const rangeInput = document.getElementById(`r${id}`);
+        if (rangeInput) rangeInput.value = st.val;
+        upEmo(st.val, id);
+        speakText(st.text);
+        saveAppState();
+    }
+
+    function upEmo(v, id) {
+        const face = document.getElementById(`f${id}`);
+        const text = document.getElementById(`t${id}`);
+        face.style.fontSize = (3 + (v / 40)) + "rem";
+        
+        let st;
+        if (v > 80) st = EMO_STATES[0];
+        else if (v > 60) st = EMO_STATES[1];
+        else if (v > 40) st = EMO_STATES[2];
+        else if (v > 20) st = EMO_STATES[3];
+        else st = EMO_STATES[4];
+
+        face.innerText = st.face;
+        text.innerText = st.text;
+        text.style.color = st.color;
+        generateOrUpdateWord(6, 'emotion', st.text);
+        saveAppState();
+    }
+
+    /* === Step 7: 개인 요약 대시보드 === */
+    function updateSummaryBoard() {
+        let displayStudent = activeStudent || "김민주";
+        let dateText = document.getElementById('dateText').innerText;
+        document.getElementById('res-date').innerText = dateText.includes("눌러주세요") ? "날짜를 선택해주세요" : dateText;
+        
+        let weatherHtml = document.getElementById('weatherText').innerHTML;
+        document.getElementById('res-weather').innerHTML = weatherHtml.includes("날씨는?") ? "날씨를 선택해주세요" : weatherHtml;
+
+        document.getElementById('finalGreeting').innerHTML = `선생님! <u>${displayStudent}</u>(이)가 완성했어요! 🙌`;
+
+        let idx = Math.max(1, studentNames.indexOf(displayStudent) + 1);
+        let face = document.getElementById(`f${idx}`).innerText;
+        let text = document.getElementById(`t${idx}`).innerText;
+        let fbEmoji = STUDENT_FALLBACK_EMOJI[displayStudent] || '🙂';
+        
+        document.getElementById('res-emotion').innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:center; gap:18px; width:100%;">
+                <img src="${displayStudent}.jpg" class="student-photo" alt="${displayStudent} 사진" onerror="handleImgError(this, '${fbEmoji}')">
+                <div style="font-size:1.8rem; font-weight:bold; color:#7986cb;">➡</div>
+                <div style="text-align:center;">
+                    <div style="font-size:3.5rem; margin-bottom:4px;">${face}</div>
+                    <div style="font-size:1.25rem; font-weight:bold; color:#e65100;">${text}</div>
+                </div>
+            </div>`;
+
+        // 시간표 요약
+        let tableHTML = '<table style="width:100%; border-collapse: collapse; font-size:1.05rem; margin-top:5px;"><tr><th style="background:#f9f9f9; padding:5px; border:1px solid #ccc; width:25%;">교시</th><th style="background:#f9f9f9; padding:5px; border:1px solid #ccc; width:75%;">과목</th></tr>';
+        let rows = document.querySelectorAll('#step3 table tr');
+        for(let i=1; i<rows.length; i++) {
+            let cols = rows[i].querySelectorAll('td');
+            if(cols.length >= 2) {
+                let period = cols[0].innerText;
+                let subject = cols[1].innerText.trim() || "-";
+                let rowBg = period.includes("점심") ? 'background-color: #fff9c4;' : '';
+                tableHTML += `<tr style="${rowBg}">
+                    <td style="border:1px solid #ccc; padding:5px; text-align:center; font-weight:${period.includes('점심')?'bold':'normal'}; color:${period.includes('점심')?'#f57f17':''}">${period}</td>
+                    <td style="border:1px solid #ccc; padding:5px; text-align:center; color:${period.includes('점심')?'#e65100':'#2e7d32'}; font-weight:bold;">${subject}</td>
+                </tr>`;
+            }
+        }
+        tableHTML += '</table>';
+        document.getElementById('res-timetable').innerHTML = tableHTML;
+
+        // 급식 요약
+        let mealContainer = document.getElementById('trayContainer');
+        if(mealStatus.some(s => s === true)) { 
+            for(let i=0; i<6; i++) {
+                if (mealMenus[i]) {
+                    document.getElementById('pos' + i).innerHTML = `<span class="tray-emoji" style="margin:0;">${mealMenus[i].emoji}</span>`;
+                }
+            }
+            let clonedTray = mealContainer.cloneNode(true);
+            clonedTray.id = "summaryTray";
+            clonedTray.style.transform = "scale(0.82)";
+            clonedTray.style.transformOrigin = "top center";
+            document.getElementById('res-meal').innerHTML = "";
+            document.getElementById('res-meal').appendChild(clonedTray);
+        } else {
+            document.getElementById('res-meal').innerHTML = "<div style='color:#999; margin-top:20px; font-size:1.2rem; font-weight:bold;'>급식을 아직 완성하지 않았어요!</div>";
+        }
+    }
+
+    function speakFinalSummary() {
+        let displayStudent = activeStudent || "김민주";
+        let idx = Math.max(1, studentNames.indexOf(displayStudent) + 1);
+        let emoText = document.getElementById(`t${idx}`).innerText;
+        speakText(`선생님! ${displayStudent} 학생이 오늘의 하루 한 장을 모두 완성했어요! 오늘 기분은 ${emoText}`);
+    }
+</script>
+</body>
+</html>
